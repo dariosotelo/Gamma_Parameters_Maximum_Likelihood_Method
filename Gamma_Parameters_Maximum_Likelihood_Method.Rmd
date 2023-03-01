@@ -37,7 +37,7 @@ Fourth we will set these partials equations equal to zero. We will have no troub
 data<-read.table("~/Proyectos/Mathematical_Statistics_MLM/samples.dat", header = TRUE)
 sample1<-data[,10]
 sample2<-data[,5]
-sample0<-sample1
+sample0<-sample2
 ```
 
 This iterative method requires starting values to begin the procedure, in the following chunk of code, the first and the second moment of the sample is approximated and used with the method of moments.
@@ -75,7 +75,8 @@ uniroot(loglikelihoodpart, c(alphaMM - 1.5, alphaMM + 1.5), maxiter = 100, tol =
 For further analysis we will declare our own iterative Newton-Raphson which will return values of the likehood, log likehood, the parameters and the difference between the likelihood in between each iteration. 
 
 ```{r }
-NR <- function(f, x0, tol = 1e-15, maxiter = 1000) {
+#For the second sample, the tolerance had to be aumented, the method looped and never got to a solution.
+NR <- function(f, x0, tol = 1e-14, maxiter = 1000) {
   require(numDeriv) # This library is used to get the numerical derivative
   
   # x0.....Initial value
@@ -103,7 +104,7 @@ NR <- function(f, x0, tol = 1e-15, maxiter = 1000) {
     Like[k] <- likelihood(x1, Lam[k])
     Loglike[k] <- loglikelihood(x1, Lam[k])
     if (k!=1) {
-        DeltaLike[k] <- Like[k]-Like[k-1]
+        DeltaLike[k] <- abs(Like[k]-Like[k-1])
     }
     # The result is called to print when |x1 - x0| < tol
     if (abs(x1 - x0) < tol) {
@@ -126,5 +127,5 @@ NR <- function(f, x0, tol = 1e-15, maxiter = 1000) {
 }
 NR(f, alphaMM)
 ```
-This are the resulting values for 
 
+These are the values of the iterations for the parameters of Gamma using the MLM, we then conclude that the most accurate alpha value is 2.190894 and the most accurate lambda value is 0.2914913 which comparing with the method of moments, we got that alpha is 2.499594207 and lambda is 0.33256287

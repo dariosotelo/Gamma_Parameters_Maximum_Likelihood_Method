@@ -8,7 +8,6 @@ loglikelihoodpart<-function(a, m1, vectorg) {
   log(a)-log(m1)+sum(log(vectorg))/30-digamma(a)
 }
 
-#We will make 3,000 simulations, each with a random vector which follows a gamma distribution.
 #For each of the 3,000 simulations, there is a vector of 30 samples which each sample follows a Gamma(2.5, 3) distribution.
 #The objective of this excercise is to show an histogram of the distribution of alpha and beta.
 #alpha and beta are estimated by the maximum likelihood method.
@@ -37,13 +36,13 @@ while (k<=3000) {
 
 hist(alphas_vector,
      col = "steelblue",
-     main = "Distribución del estimador del parámetro de forma alfa",
+     main = "Alpha parameter distribution",
      xlab = "",
-     ylab = "Frecuencia")
+     ylab = "Frecuency")
 hist(betas_vector,
      col = "red",
-     main = "Distribución del estimador del parámetro de forma escala",
+     main = "Beta parameter distribution",
      xlab = "",
-     ylab = "Frecuencia")
+     ylab = "Frecuency")
 
 
