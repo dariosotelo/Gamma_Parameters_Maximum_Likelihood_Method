@@ -1,0 +1,130 @@
+---
+title: "Gamma_Parameters_Maximum_Likelihood_Method"
+author: "Dario Sotelo"
+date: '2023-03-01'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Goal:
+
+For this analysis we are trying to infer the values of the parameters of a gamma distribution. First we did the analysis finding the method of moments and now we will find the parameters with the method of maximum likelihood.
+
+This method is done with two different samples of X with a Gamma(alpha, lambda) distribution.
+
+For this analysis we will have to import the following library:
+
+```{r}
+library(numDeriv)
+```
+
+## Steps:
+
+First we get the likelihood of an i.i.d. sample, X1,...,Xn which is written in the repository on a pdf file.
+
+Second we get the log likelihood of our sample.
+
+Third we get the partial derivatives of the log likelihood with respect to alpha and to lambda. 
+
+Fourth we will set these partials equations equal to zero. We will have no trouble doing the lambda derivative, but when we try to set the alpha derivative to zero, we will find an equation that cannot be solved in closed form. This document is aided to solve this issue.
+
+16 random data samples were generated and they are read in the following lines, this document will read two samples (sample0 is a variable to facilitate the analysis, i.e. we will only change sample0<-sample2 once the analysis for sample1 is completed):
+
+```{r }
+data<-read.table("~/Proyectos/Mathematical_Statistics_MLM/samples.dat", header = TRUE)
+sample1<-data[,10]
+sample2<-data[,5]
+sample0<-sample1
+```
+
+This iterative method requires starting values to begin the procedure, in the following chunk of code, the first and the second moment of the sample is approximated and used with the method of moments.
+
+```{r }
+m1<-sum(sample0^1)/n
+m2<-sum(sample0^2)/n
+
+lambdaMM<-m1/(m2-m1^2)
+alphaMM<-m1^2/(m2-m1^2)
+```
+
+We will only use alphaMM to begin the iterative bisection method, the lambdaMM is never used but it works as a checkpoint.
+We will now declare the functions of the likelihood and the partial derivative log likelihood with respect to alpha set to equal zero and show the graph for the partial derivative of the log likelihood.
+
+```{r }
+likelihood<-function(a, l) {
+  ((1/gamma(a))^30) * (l^(30*a)) * (prod(sample0)^(a-1)) * exp(-l*sum(sample0))
+}
+
+loglikelihood<-function(a, l) {
+  (-30*log(gamma(a)) + n*a*log(l) + (a-1)*sum(log(sample0)) - (l*sum(sample0)) )
+}
+
+loglikelihoodpart<-function(a) {
+  log(a)-log(m1)+sum(log(sample0))/30-digamma(a)
+}
+
+suppressWarnings( #the digamma function will return NaN values, this will generate a warning
+  curve(loglikelihoodpart, col = 'blue', lwd = 2, from = 0, n = 100, xlim = c(0, 5), ylab = 'f(x)') 
+)
+abline(a = 0, b = 0, lty = 5)
+uniroot(loglikelihoodpart, c(alphaMM - 1.5, alphaMM + 1.5), maxiter = 100, tol = 10^-15)
+```
+For further analysis we will declare our own iterative Newton-Raphson which will return values of the likehood, log likehood, the parameters and the difference between the likelihood in between each iteration. 
+
+```{r }
+NR <- function(f, x0, tol = 1e-15, maxiter = 1000) {
+  require(numDeriv) # This library is used to get the numerical derivative
+  
+  # x0.....Initial value
+  # Maxiter.....Number of iterations
+  
+  # This line of code verifies that the initial value is not a root of the problem
+  fx0 <- f(x0)
+  if (fx0 == 0.0) {
+    return(x0)
+  }
+
+  k <- 1    # The number of iterations is initialized
+  Alph <- NA   # The vector which keeps the iteration values of alpha is initialized
+  Lam <- NA   # This vector keeps the iteration values of lambda
+  Like <- NA #The value of the likelihood function will be saved
+  Loglike <- NA #The value for the log likelihoodd will be also saved
+  DeltaLike <- NA #The difference between the values of the likelihood function will be saved
+  
+  
+  while (k <= maxiter) {
+    dx <- genD(func = f, x = x0)$D[1] # first derivative
+    x1 <- x0 - (f(x0) / dx) # the next approximation is calculated 
+    Alph[k] <- x1 # The iterations are saved 
+    Lam[k] <- x1/m1 
+    Like[k] <- likelihood(x1, Lam[k])
+    Loglike[k] <- loglikelihood(x1, Lam[k])
+    if (k!=1) {
+        DeltaLike[k] <- Like[k]-Like[k-1]
+    }
+    # The result is called to print when |x1 - x0| < tol
+    if (abs(x1 - x0) < tol) {
+      aprox <- tail(Alph, n=1)
+      res1 <- Alph
+      res2 <- Lam
+      res3 <- Like
+      res4 <- Loglike
+      res5 <- DeltaLike
+      aux <- data.frame(res1,res2,res3,res4, res5)
+      aux<-setNames(aux, c("Alpha","Lambda","Likelihood","Log Likelihood", "Delta k"))
+      #aux<-aux[2:6,]
+      return(aux)
+    }
+    # If the NR method has not converged, it must continue its iterations.
+    x0 <- x1
+    k <- k + 1
+  }
+  print('The method has failed. The number of iterations is not enough.')
+}
+NR(f, alphaMM)
+```
+This are the resulting values for 
+
